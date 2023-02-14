@@ -1,0 +1,1 @@
+docker build . -t patient-edge:v1.0.1

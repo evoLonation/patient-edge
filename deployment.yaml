@@ -16,7 +16,7 @@ spec:
       nodeName: zzy-raspberrypi
       containers:
         - name: patient-edge
-          image: patient-edge:v1.0
+          image: patient-edge:v1.0.1
           imagePullPolicy: IfNotPresent # 如果image为本地构建则需要该参数
 
 
