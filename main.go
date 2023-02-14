@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 
+	"sync"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 )
@@ -42,4 +44,7 @@ func main() {
 	if tc := client.Subscribe(SubscribeTopic, 0, onMessage); tc.Wait() && tc.Error() != nil {
 		log.Fatal(tc.Error())
 	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait()
 }
