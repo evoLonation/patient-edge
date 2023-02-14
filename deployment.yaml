@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-edge
+spec:
+  selector:
+    matchLabels:
+      app: patient-edge
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: patient-edge
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        name: zzy-raspberrypi
+      containers:
+        - name: patient-edge
+          image: patient-edge:v1.0
+          imagePullPolicy: IfNotPresent # 如果image为本地构建则需要该参数
+
+
