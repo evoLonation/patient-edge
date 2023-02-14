@@ -13,8 +13,7 @@ spec:
         app: patient-edge
     spec:
       hostNetwork: true
-      nodeSelector:
-        name: zzy-raspberrypi
+      nodeName: zzy-raspberrypi
       containers:
         - name: patient-edge
           image: patient-edge:v1.0.2
