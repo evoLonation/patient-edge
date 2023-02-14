@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	IP             = "localhost"
+	IP             = "localhost:1883"
 	ClientId       = "PatientChecker-01"
 	SubscribeTopic = "$patient/sensor/+/temperature"
 )
