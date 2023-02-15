@@ -18,5 +18,36 @@ spec:
         - name: patient-edge
           image: patient-edge:v1.0.2
           imagePullPolicy: IfNotPresent # 如果image为本地构建则需要该参数
-
-
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-mysql
+spec:
+  selector:  
+    matchLabels:
+      app: edge-mysql
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        app: edge-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: 2002116yy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edge-mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: edge-mysql
