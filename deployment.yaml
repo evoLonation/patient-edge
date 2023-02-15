@@ -33,6 +33,7 @@ spec:
       labels:
         app: edge-mysql
     spec:
+      nodeName: zzy-raspberrypi
       containers:
         - name: mysql
           image: mysql
