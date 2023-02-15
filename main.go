@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"strings"
@@ -9,18 +10,19 @@ import (
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
 const (
-	IP             = "localhost:1883"
+	IP             = "edge-mqtt:1883"
 	ClientId       = "PatientChecker-01"
 	SubscribeTopic = "$patient/sensor/+/temperature"
-	DB             = "root:2002116yy@tcp(edge-mysql:3306)/patient_edge?parseTime=true"
+	DBResource     = "root:2002116yy@tcp(edge-mysql:3306)/patient_edge?parseTime=true"
 )
 
-var Db *sqlx.DB
+var DB *sqlx.DB
 
 type TemperatureSensor struct {
 	Temperature float64 `json:"temperature"`
@@ -29,7 +31,7 @@ type TemperatureSensor struct {
 type TemperatureDB struct {
 	TemperatureId int32     `db:"temperature_id"`
 	PatientId     string    `db:"patient_id"`
-	Value         float64   `db:"temperature"`
+	Value         float64   `db:"value"`
 	Timestamp     time.Time `db:"timestamp"`
 }
 type Patient struct {
@@ -53,28 +55,33 @@ func connect() (client mqtt.Client, err error) {
 
 func onTemperatureMessage(client mqtt.Client, message mqtt.Message) {
 	log.Printf("receive message %s", message.Payload())
+	log.Printf("from topic %s\n", message.Topic())
 	// 解析温度数据
 	temperatureSensor := &TemperatureSensor{}
 	if err := json.Unmarshal(message.Payload(), temperatureSensor); err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "unmarshal payload error"))
 	}
 	// 从topic解析出病人id
 	patientId := strings.Split(message.Topic(), "/")[2]
-	var patient *Patient
-	if err := Db.Get(patient, "select * from patient where patient_id = "+patientId); err != nil {
-		log.Fatal(err)
-	}
-	if patient == nil {
-		return
+	patient := &Patient{}
+	if err := DB.Get(patient, "select * from patient where patient_id = ?", patientId); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("the patient id %s from does not exists\n", patientId)
+			return
+		} else {
+			log.Fatal(errors.Wrap(err, "get patient error"))
+		}
 	}
 	temperature := &TemperatureDB{
 		PatientId: patientId,
 		Value:     temperatureSensor.Temperature,
 		Timestamp: time.Now(),
 	}
-	if _, err := Db.NamedExec("insert into temperature (patient_id, value, timestamp) values (:patient_id, :value, :timestamp)", temperature); err != nil {
-		log.Fatal(err)
+	if _, err := DB.NamedExec("insert into temperature (patient_id, value, timestamp) values (:patient_id, :value, :timestamp)", temperature); err != nil {
+		log.Fatal(errors.Wrap(err, "insert temperature data error"))
 	}
+	// todo 直接调用耦合性太高，是否应该改为订阅\发布调用？
+	checkPatient(patientId)
 }
 
 func checkPatient(patientId string) {
@@ -83,7 +90,7 @@ func checkPatient(patientId string) {
 
 func main() {
 	var err error
-	Db, err = sqlx.Open("mysql", DB)
+	DB, err = sqlx.Open("mysql", DBResource)
 	if err != nil {
 		log.Fatal(err)
 	}
