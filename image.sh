@@ -1,1 +1,4 @@
-docker build . -t patient-edge:v1.0.2
+# /bin/bash
+VERSION=v1.0.3
+IMAGENAME=patient-edge:${VERSION}
+docker build . -t ${IMAGENAME}
