@@ -16,7 +16,7 @@ spec:
       nodeName: zzy-raspberrypi
       containers:
       - name: patient-edge
-        image: patient-edge:v1.0.4
+        image: evolonation/patient-edge:CUP_VERSION
         imagePullPolicy: IfNotPresent # 如果image为本地构建则需要该参数
 ---
 apiVersion: apps/v1
@@ -36,16 +36,15 @@ spec:
       nodeName: zzy-raspberrypi
       containers:
       - name: mysql
-        image: mysql
+        image: mysql:8.0.32
         ports:
           - containerPort: 3306
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: 2002116yy
-        command: ['sh', '-c', 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < /scripts/script.sql']
         volumeMounts:
         - name: scripts
-          mountPath: /scripts
+          mountPath: /docker-entrypoint-initdb.d
       volumes:
       - name: scripts
         configMap:
