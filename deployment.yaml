@@ -63,6 +63,47 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: cloud-mysql
+spec:
+  selector:  
+    matchLabels:
+      app: cloud-mysql
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        app: cloud-mysql
+    spec:
+      nodeName: imaginecup
+      containers:
+      - name: mysql
+        image: mysql:8.0.32
+        ports:
+          - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: 2002116yy
+        volumeMounts:
+        - name: scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: scripts
+        configMap:
+          name: cloud-mysql-scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: cloud-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: edge-mqtt
 spec:
   selector:  

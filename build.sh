@@ -1,5 +1,5 @@
 # /bin/bash
-VERSION=v1.0.5
+VERSION=v1.0.6
 
 # 卸载之前的部署
 . ./offload.sh
@@ -15,7 +15,8 @@ sed -i "s/CUP_VERSION/${VERSION}/g" target/deployment.yaml
 docker build . -t evolonation/patient-edge:${VERSION} --platform arm64 --push
 
 # 创建configmap
-kubectl create configmap edge-mysql-scripts --from-file script.sql 
+kubectl create configmap edge-mysql-scripts --from-file script_edge.sql 
+kubectl create configmap cloud-mysql-scripts --from-file script_cloud.sql 
 
 # 部署
 kubectl apply -f target/deployment.yaml
