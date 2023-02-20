@@ -11,3 +11,4 @@ create table patient(
 	patient_id varchar(255),
 	primary key(patient_id)
 );
+insert into patient (patient_id) values ("sensor-temperature-01");

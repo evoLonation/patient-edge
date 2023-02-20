@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -16,10 +17,11 @@ import (
 )
 
 const (
-	IP               = "edge-mqtt:1883"
+	IP = "edge-mqtt:1883"
+	// IP               = "localhost:1883"
 	ClientId         = "PatientChecker-01"
-	TemperatureTopic = "$patient/sensor/+/temperature"
-	CheckTopic       = "$patient/edge/+/check"
+	TemperatureTopic = "$patient/sensor/sensor-temperature-01/temperature"
+	CheckTopic       = "$patient/edge/sensor-temperature-01/check"
 	DBResource       = "root:2002116yy@tcp(edge-mysql:3306)/patient_edge?parseTime=true"
 	CloudDBResource  = "root:2002116yy@tcp(cloud-mysql:3306)/patient_cloud?parseTime=true"
 )
@@ -76,8 +78,8 @@ func onTemperatureMessage(client mqtt.Client, message mqtt.Message) {
 	}
 	// 从topic解析出病人id
 	patientId := strings.Split(message.Topic(), "/")[2]
-	patient := &Patient{}
-	if err := DB.Get(patient, "select * from patient where patient_id = ?", patientId); err != nil {
+	patient := Patient{}
+	if err := DB.Get(&patient, "select * from patient where patient_id = ?", patientId); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("the patient id %s from does not exists\n", patientId)
 			return
@@ -93,10 +95,11 @@ func onTemperatureMessage(client mqtt.Client, message mqtt.Message) {
 	if _, err := DB.NamedExec("insert into temperature (patient_id, value, timestamp) values (:patient_id, :value, :timestamp)", temperature); err != nil {
 		log.Fatal(errors.Wrap(err, "insert temperature data error"))
 	}
-	if tc := Client.Publish(CheckTopic, 0, false, []byte("")); tc.Wait() && tc.Error() != nil {
-		log.Fatal(errors.Wrap(tc.Error(), "publish check topic error"))
-	}
-
+	go func() {
+		if tc := Client.Publish(CheckTopic, 0, false, []byte("")); tc.Wait() && tc.Error() != nil {
+			log.Fatal(errors.Wrap(tc.Error(), "publish check topic error"))
+		}
+	}()
 }
 
 func onCheckMessage(client mqtt.Client, message mqtt.Message) {
@@ -105,22 +108,41 @@ func onCheckMessage(client mqtt.Client, message mqtt.Message) {
 	patientId := strings.Split(message.Topic(), "/")[2]
 	// 获取数据库的历史数据
 	var temperatures []TemperatureDB
-	if err := DB.Get(temperatures, "select * from temperature where patient_id = ? order by timestamp desc limit 5", patientId); err != nil {
+	if err := DB.Select(&temperatures, "select * from temperature where patient_id = ? order by timestamp desc limit 5", patientId); err != nil {
 		log.Fatal(errors.Wrap(err, "get temperature data error"))
 	}
+	var valuesStr string
 	var avg float64
 	for _, temperature := range temperatures {
 		avg += temperature.Value
+		valuesStr += fmt.Sprintf("%f, ", temperature.Value)
 	}
+	log.Printf("temperature data: %s\n", valuesStr)
 	avg /= float64(len(temperatures))
-	abnormal := &Abnormal{
-		PatientId: patientId,
-		Value:     avg,
-		Timestamp: time.Now(),
-	}
+	log.Printf("average temperature is %f\n", avg)
 	if avg >= 28 {
-		log.Printf("patient %s is abnormal, average temperature is %f", patientId, avg)
-		CDB.NamedExec("insert into abnormal (patient_id, value, timestamp) values (:patient_id, :value, :timestamp)", abnormal)
+		log.Printf("patient %s is abnormal, average temperature is %f\n", patientId, avg)
+		abnormal := &Abnormal{
+			PatientId: patientId,
+			Value:     avg,
+			Timestamp: time.Now(),
+		}
+		if _, err := CDB.NamedExec("insert into abnormal (patient_id, value, timestamp) values (:patient_id, :value, :timestamp)", abnormal); err != nil {
+			log.Fatal(errors.Wrap(err, "insert abnormal data error"))
+		}
+	}
+}
+
+func publishTicker() {
+	ch := time.Tick(5 * time.Second)
+	i := 0.0
+	for range ch {
+		log.Println("publish a temperature data")
+
+		if tc := Client.Publish(TemperatureTopic, 0, false, fmt.Sprintf(`{"temperature": %f}`, 27.5+i)); tc.Wait() && tc.Error() != nil {
+			log.Fatal(tc.Error())
+		}
+		i += 0.1
 	}
 }
 
@@ -135,7 +157,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	Client, err := connect()
+	Client, err = connect()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -145,6 +167,8 @@ func main() {
 	if tc := Client.Subscribe(CheckTopic, 0, onCheckMessage); tc.Wait() && tc.Error() != nil {
 		log.Fatal(tc.Error())
 	}
+	log.Println("init done, start work")
+	// publishTicker()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()

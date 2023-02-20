@@ -1,5 +1,5 @@
 # /bin/bash
-VERSION=v1.0.6
+VERSION=v1.0.7
 
 # 卸载之前的部署
 . ./offload.sh
@@ -12,6 +12,7 @@ cp deployment.yaml target
 sed -i "s/CUP_VERSION/${VERSION}/g" target/deployment.yaml
 
 # 构建docker镜像
+docker run --privileged --rm tonistiigi/binfmt --install all
 docker build . -t evolonation/patient-edge:${VERSION} --platform arm64 --push
 
 # 创建configmap
