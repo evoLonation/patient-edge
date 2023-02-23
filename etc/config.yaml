@@ -1,0 +1,18 @@
+edge:
+  dataSource: root:2002116yy@tcp(edge-mysql:3306)/patient?parseTime=true
+  clientId : edge
+  mqttBroker: edge-mqtt:1883
+  rpcServer: patient-cloud:1234
+  topic:
+    receiveTemperature: "$patient/receive-temperature"
+cloud:
+  dataSource: root:2002116yy@tcp(cloud-mysql:3306)/patient?parseTime=true
+  mqttBroker: cloud-mqtt:1883
+  clientId: cloud
+  address: patient-cloud
+  rpcPort: 1234
+  topic:
+    notice: "$patient/notice/+"
+common:
+  topic:
+    sync: "$patient/sync"

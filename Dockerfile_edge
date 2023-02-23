@@ -14,8 +14,8 @@ ADD go.mod .
 ADD go.sum .
 RUN go mod download
 COPY . .
-RUN go build -ldflags="-s -w" -o /app/main main.go
-
+RUN go build -ldflags="-s -w" -o /app/main edge/main.go
+COPY etc /app/etc 
 
 FROM scratch
 
@@ -25,5 +25,6 @@ ENV TZ Asia/Shanghai
 
 WORKDIR /app
 COPY --from=builder /app/main /app/main
+COPY --from=builder /app/etc  /app/etc
 
 CMD ["./main"]
