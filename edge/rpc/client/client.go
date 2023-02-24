@@ -1,9 +1,9 @@
-package rpc
+package client
 
 import (
 	"log"
 	"net/rpc"
-	server "patient-edge/cloud/rpc"
+	"patient-edge/cloud/rpc/types"
 	"patient-edge/config"
 
 	"github.com/pkg/errors"
@@ -18,10 +18,11 @@ func init() {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "dialing rpc server error"))
 	}
+
 }
 
 func AddAbnormal(value float64, patientId string) bool {
-	arg := server.ReceiveAbnormalArg{
+	arg := types.ReceiveAbnormalArg{
 		Value:     value,
 		PatientId: patientId,
 	}

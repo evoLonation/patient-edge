@@ -7,7 +7,8 @@ import (
 	"patient-edge/config"
 	"patient-edge/edge/db"
 	"patient-edge/edge/operation"
-	"patient-edge/edge/rpc"
+	rpc "patient-edge/edge/rpc/client"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -15,19 +16,29 @@ import (
 )
 
 var Client mqtt.Client
+var SyncClient mqtt.Client
 
 func Start() {
+	// mqtt.DEBUG = log.New(os.Stdout, "[DEBUG] ", 0)
 	edgeConfig := &config.Config.Edge
 	Client = mqtt.NewClient(mqtt.NewClientOptions().AddBroker(edgeConfig.MqttBroker).SetClientID(edgeConfig.ClientId))
 	if tc := Client.Connect(); tc.Wait() && tc.Error() != nil {
 		log.Fatal(errors.Wrap(tc.Error(), "connect to broker error"))
 	}
-	// 数据同步相关
-	if tc := Client.Subscribe(config.Config.Common.Topic.Sync, 0, sync); tc.Wait() && tc.Error() != nil {
-		log.Fatal(errors.Wrap(tc.Error(), "subscribe error"))
-	}
 	// 服务相关
 	if tc := Client.Subscribe(edgeConfig.Topic.ReceiveTemperature, 0, receiveTemperature); tc.Wait() && tc.Error() != nil {
+		log.Fatal(errors.Wrap(tc.Error(), "subscribe error"))
+	}
+
+	cloudConfig := &config.Config.Cloud
+	SyncClient = mqtt.NewClient(mqtt.NewClientOptions().AddBroker(cloudConfig.MqttBroker).SetClientID(edgeConfig.ClientId))
+	if tc := SyncClient.Connect(); tc.Wait() && tc.Error() != nil {
+		log.Fatal(errors.Wrap(tc.Error(), "connect to broker error"))
+	}
+	// 数据同步相关
+	topic := strings.Replace(config.Config.Common.Topic.Sync, "+", edgeConfig.ClientId, 1)
+	log.Printf("subscribe topic %s \n", topic)
+	if tc := SyncClient.Subscribe(topic, 0, sync); tc.Wait() && tc.Error() != nil {
 		log.Fatal(errors.Wrap(tc.Error(), "subscribe error"))
 	}
 }

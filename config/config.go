@@ -23,12 +23,13 @@ type EdgeConf struct {
 	} `yaml:"topic"`
 }
 type CloudConf struct {
-	DataSource string `yaml:"dataSource"`
-	MqttBroker string `yaml:"mqttBroker"`
-	ClientId   string `yaml:"clientId"`
-	Address    string `yaml:"address"`
-	RpcPort    string `yaml:"rpcPort"`
-	Topic      struct {
+	DataSource     string `yaml:"dataSource"`
+	MqttBroker     string `yaml:"mqttBroker"`
+	ClientId       string `yaml:"clientId"`
+	Address        string `yaml:"address"`
+	RpcPort        string `yaml:"rpcPort"`
+	HttpServerPort string `yaml:"httpServerPort"`
+	Topic          struct {
 		Notice string `yaml:"notice"`
 	} `yaml:"topic"`
 }

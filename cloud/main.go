@@ -1,12 +1,14 @@
 package main
 
 import (
-	"patient-edge/cloud/rpc"
+	"patient-edge/cloud/http"
+	"patient-edge/cloud/rpc/server"
 	"sync"
 )
 
 func main() {
-	rpc.Start()
+	server.Start()
+	http.Start()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()

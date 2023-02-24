@@ -2,6 +2,7 @@ package operation
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"patient-edge/cloud/db"
 	"patient-edge/cloud/mqtt"
@@ -51,13 +52,14 @@ func AddPatient(patientId string, doctorId string, edgeId string) bool {
 	if _, err := DB.NamedExec("insert into patient (patient_id, edge_id, doctor_id) values  (:patient_id, :edge_id, :doctor_id)", &patient); err != nil {
 		log.Fatal(errors.Wrap(err, "insert new patient error"))
 	}
+	mqtt.Sync(fmt.Sprintf("insert into patient (patient_id) values  (\"%s\")", patient.PatientId), patient.EdgeId)
 	return true
 }
 
 func AddDoctor(doctorId string) bool {
 	DB := db.DB
 	doctor := db.Doctor{}
-	if err := DB.Get(&doctor, "select * from doctor where doctor_id = ?", doctor); err == nil || err != sql.ErrNoRows {
+	if err := DB.Get(&doctor, "select * from doctor where doctor_id = ?", doctorId); err == nil || err != sql.ErrNoRows {
 		if err == nil {
 			log.Printf("the doctor id %s already exists\n", doctorId)
 			return false

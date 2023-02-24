@@ -11,8 +11,9 @@ cloud:
   clientId: cloud
   address: patient-cloud
   rpcPort: 1234
+  httpServerPort: 8081
   topic:
     notice: "$patient/notice/+"
 common:
   topic:
-    sync: "$patient/sync"
+    sync: "$patient/sync/+"

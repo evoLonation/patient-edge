@@ -3,8 +3,13 @@ kind: Service
 metadata:
   name: patient-cloud
 spec:
+  type: NodePort
   ports:
   - port: 1234
+    name: rpc
+  - port: 8081
+    nodePort: 30081
+    name: http
   selector:
     app: patient-cloud
 ---
@@ -35,6 +40,7 @@ spec:
         imagePullPolicy: IfNotPresent # 如果image为本地构建则需要该参数
         ports:
         - containerPort: 1234
+        - containerPort: 8081
 ---
 apiVersion: apps/v1
 kind: Deployment

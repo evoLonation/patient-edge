@@ -13,11 +13,13 @@ import (
 var Client mqtt.Client
 
 func init() {
+	log.Println("init mqtt client")
 	cloudConfig := &config.Config.Cloud
 	Client = mqtt.NewClient(mqtt.NewClientOptions().AddBroker(cloudConfig.MqttBroker).SetClientID(cloudConfig.ClientId))
 	if tc := Client.Connect(); tc.Wait() && tc.Error() != nil {
 		log.Fatal(errors.Wrap(tc.Error(), "connect to broker error"))
 	}
+	log.Println("init mqtt done")
 }
 
 type NoticeMsg struct {
@@ -37,5 +39,13 @@ func Notice(abnormal float64, patientId string, doctorId string) {
 	}
 	if tc := Client.Publish(topic, 0, false, msgb); tc.Wait() && tc.Error() != nil {
 		log.Fatal(errors.Wrap(tc.Error(), "publish error"))
+	}
+}
+
+func Sync(query string, edgeId string) {
+	topic := strings.Replace(config.Config.Common.Topic.Sync, "+", edgeId, 1)
+	log.Printf("publish to topic: %s \n", topic)
+	if tc := Client.Publish(topic, 0, false, query); tc.Wait() && tc.Error() != nil {
+		log.Fatal(errors.Wrap(tc.Error(), "publish sync error"))
 	}
 }
