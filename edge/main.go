@@ -8,7 +8,6 @@ import (
 
 func main() {
 	mqtt.Start()
-	// publishTicker()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()
