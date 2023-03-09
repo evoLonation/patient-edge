@@ -1,4 +1,6 @@
 edge:
+  rpc:
+    
   dataSource: root:2002116yy@tcp(edge-mysql:3306)/patient?parseTime=true
   clientId : edge
   mqttBroker: edge-mqtt:1883
