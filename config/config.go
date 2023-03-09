@@ -14,6 +14,20 @@ type Conf struct {
 	Cloud  CloudConf  `yaml:"cloud"`
 	Common CommonConf `yaml:"common"`
 }
+type EdgeServiceConf struct {
+	EdgeDataSource  string   `yaml:"edgeDataSource"`
+	CloudDataSource string   `yaml:"cloudDataSource"`
+	Mqtt            MqttConf `yaml:"mqtt"`
+}
+type MqttConf struct {
+	Broker   string `yaml:"broker"`
+	ClientId string `yaml:"clientId"`
+}
+
+type CloudServiceConf struct {
+	DataSource string `yaml:"dataSource"`
+}
+
 type EdgeConf struct {
 	DataSource string `yaml:"dataSource"`
 	MqttBroker string `yaml:"mqttBroker"`
