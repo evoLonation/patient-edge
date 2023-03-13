@@ -1,40 +1,30 @@
-package operation
+package service
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
-	"patient-edge/common"
-	"patient-edge/config"
+	"patient-edge/cloud/rpc/cloudclient"
 	"patient-edge/entity"
 	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/jmoiron/sqlx"
+
 	"github.com/pkg/errors"
 )
 
-type UploadTemperatureService struct {
-	// config is private
-	edgeDB     *sqlx.DB
-	cloudDB    *sqlx.DB
-	redis      string // todo
-	mqttClient mqtt.Client
-	// TempProperty is public
-	CurrentPatient  *entity.Patient
-	CurrentAbnormal *entity.Abnormal
+type UploadTemperature struct {
+	*context
+	// caller
+	mqttClient           mqtt.Client //does not need
+	uploadTemperatureRpc cloudclient.UploadTemperature
+	// TempProperty
+	currentPatient  *entity.Patient
+	currentAbnormal *entity.Abnormal
 }
 
-func NewUploadTemperatureService(conf config.EdgeServiceConf) *UploadTemperatureService {
-	return &UploadTemperatureService{
-		edgeDB:     common.GetMysqlDB(conf.EdgeDataSource),
-		cloudDB:    common.GetMysqlDB(conf.CloudDataSource),
-		mqttClient: common.GetMqttClient(conf.Mqtt),
-	}
-}
-
-func (p *UploadTemperatureService) CreateTemperature(value float64, patientId string) error {
+func (p *UploadTemperature) createTemperature(value float64, patientId string) (bool, error) {
 
 	log.Println("operation CreateTemperature start")
 	defer log.Println("operation ReceiveTemperature done")
@@ -63,7 +53,7 @@ func (p *UploadTemperatureService) CreateTemperature(value float64, patientId st
 
 	log.Printf("precondition start")
 	if !(patientUndefined == false) {
-		return errors.New("precondition not satisfied")
+		return false, errors.New("precondition not satisfied")
 	}
 
 	log.Println("post condition start")
@@ -80,11 +70,11 @@ func (p *UploadTemperatureService) CreateTemperature(value float64, patientId st
 		}
 	}()
 	wg.Wait()
-	p.CurrentPatient = patient
-	return nil
+	p.currentPatient = patient
+	return true, nil
 }
 
-func (p *UploadTemperatureService) ComputeAbnormal() error {
+func (p *UploadTemperature) computeAbnormal() (bool, error) {
 	log.Println("operation CreateTemperature start")
 	defer log.Println("operation ReceiveTemperature done")
 
@@ -120,9 +110,24 @@ func (p *UploadTemperatureService) ComputeAbnormal() error {
 			Value:     avg,
 			Timestamp: time.Now(),
 		}
-		p.CurrentAbnormal = abnormal
-		return nil
+		p.currentAbnormal = abnormal
+		return true, nil
 	} else {
-		return nil
+		return true, nil
 	}
+}
+
+func (p *UploadTemperature) UploadTemperature(temperature float64, patientId string) error {
+	if _, err := p.createTemperature(temperature, patientId); err != nil {
+		return errors.Wrap(err, "createTemperature error")
+	}
+	if _, err := p.computeAbnormal(); err != nil {
+		return errors.Wrap(err, "computeAbnormal error")
+	}
+	if p.currentAbnormal != nil {
+		if _, err := p.uploadTemperatureRpc.UploadAbnormal(p.currentAbnormal); err != nil {
+			return errors.Wrap(err, "uploadAbnormal error")
+		}
+	}
+	return nil
 }

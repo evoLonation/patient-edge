@@ -10,9 +10,27 @@ import (
 )
 
 type Conf struct {
-	Edge   EdgeConf   `yaml:"edge"`
-	Cloud  CloudConf  `yaml:"cloud"`
-	Common CommonConf `yaml:"common"`
+	Edge  EdgeConf  `yaml:"edge"`
+	Cloud CloudConf `yaml:"cloud"`
+}
+type EdgeConf struct {
+	Service   EdgeServiceConf
+	Listen    ListenConf
+	RpcClient RpcClientConf
+}
+type CloudConf struct {
+	Service   CloudServiceConf
+	Listen    ListenConf
+	RpcServer RpcServerConf
+}
+type CloudServiceConf struct {
+	CloudDataSource string            `yaml:"dataSource"`
+	Edges           []CloudToEdgeConf `yaml:"edges"`
+	Mqtt            MqttConf          `yaml:"mqtt"`
+}
+type CloudToEdgeConf struct {
+	EdgeId     string `yaml:"edgeId"`
+	DataSource string `yaml:"dataSource"`
 }
 type EdgeServiceConf struct {
 	EdgeDataSource  string   `yaml:"edgeDataSource"`
@@ -23,41 +41,25 @@ type MqttConf struct {
 	Broker   string `yaml:"broker"`
 	ClientId string `yaml:"clientId"`
 }
-
-type CloudServiceConf struct {
-	DataSource string `yaml:"dataSource"`
+type ListenConf struct {
+	Mqtt MqttConf       `yaml:"mqtt"`
+	Http HttpServerConf `yaml:"http"`
 }
 
-type EdgeConf struct {
-	DataSource string `yaml:"dataSource"`
-	MqttBroker string `yaml:"mqttBroker"`
-	ClientId   string `yaml:"clientId"`
-	Topic      struct {
-		ReceiveTemperature string `yaml:"receiveTemperature"`
-	} `yaml:"topic"`
+type HttpServerConf struct {
+	Port string `yaml:"port"`
 }
-type CloudConf struct {
-	DataSource     string `yaml:"dataSource"`
-	MqttBroker     string `yaml:"mqttBroker"`
-	ClientId       string `yaml:"clientId"`
-	Address        string `yaml:"address"`
-	RpcPort        string `yaml:"rpcPort"`
-	HttpServerPort string `yaml:"httpServerPort"`
-	Topic          struct {
-		Notice string `yaml:"notice"`
-	} `yaml:"topic"`
+type RpcServerConf struct {
+	Port string `yaml:"port"`
 }
-type CommonConf struct {
-	Topic struct {
-		Sync string `yaml:"sync"`
-	} `yaml:"topic"`
+type RpcClientConf struct {
+	Address string `yaml:"address"`
+	Port    string `yaml:"port"`
 }
-
-var Config Conf
 
 var configFile string = "./etc/config.yaml"
 
-func init() {
+func ParseConfig() (config Conf) {
 	dirs, err := os.ReadDir("./etc")
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "read directory error"))
@@ -74,9 +76,10 @@ func init() {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "read config file error"))
 	}
-	if err := yaml.Unmarshal(content, &Config); err != nil {
+	if err := yaml.Unmarshal(content, &config); err != nil {
 		log.Fatal(errors.Wrap(err, "unmarshal config file error"))
 	}
-	conf, _ := json.Marshal(&Config)
+	conf, _ := json.Marshal(&config)
 	log.Print(string(conf))
+	return
 }

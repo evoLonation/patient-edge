@@ -1,15 +1,17 @@
 package main
 
 import (
-	"patient-edge/cloud/http"
+	"patient-edge/cloud/listen"
 	"patient-edge/cloud/rpc/server"
-	"sync"
+	"patient-edge/cloud/service"
+	"patient-edge/common"
+	"patient-edge/config"
 )
 
 func main() {
-	server.Start()
-	http.Start()
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	wg.Wait()
+	config := config.ParseConfig().Cloud
+	uploadTemperatureSvc, doctorSvc, patientSvc := service.NewServices(config.Service)
+	listen.Start(config.Listen, patientSvc, doctorSvc)
+	server.Start(uploadTemperatureSvc, config.RpcServer)
+	common.Block()
 }

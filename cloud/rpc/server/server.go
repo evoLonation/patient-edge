@@ -1,37 +1,16 @@
 package server
 
-import (
-	"log"
-	"net"
-	"net/rpc"
-	"patient-edge/cloud/operation"
-	"patient-edge/cloud/rpc/types"
-	"patient-edge/config"
+// 提供给其他节点的rpc服务
 
-	"github.com/pkg/errors"
+import (
+	"patient-edge/cloud/service"
+	"patient-edge/common"
+	"patient-edge/config"
 )
 
-type Service int
-
-func (t *Service) ReceiveAbnormal(req *types.ReceiveAbnormalArg, reply *bool) error {
-	*reply = operation.ReceiveAbnormal(req.Value, req.PatientId)
-	return nil
-}
-
-func Start() {
-	cloudConfig := config.Config.Cloud
-	rpc.Register(new(Service))
-	l, err := net.Listen("tcp", ":"+cloudConfig.RpcPort)
-	if err != nil {
-		log.Fatal("listen error:", err)
+func Start(uploadTemperatureSvc *service.UploadTemperature, config config.RpcServerConf) {
+	uploadTemperatureRpc := &UploadTemperature{
+		uploadTemperatureSvc: uploadTemperatureSvc,
 	}
-	go func() {
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				log.Fatal(errors.Wrap(err, "accept error"))
-			}
-			rpc.ServeConn(conn)
-		}
-	}()
+	common.StartRpcServer(config, uploadTemperatureRpc)
 }

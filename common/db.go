@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetMysqlDB(dataSource string) *sqlx.DB {
+func NewMysqlDB(dataSource string) *sqlx.DB {
 	db, err := sqlx.Open("mysql", dataSource)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "open db error"))

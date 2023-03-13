@@ -1,6 +1,7 @@
 package types
 
-type ReceiveAbnormalArg struct {
-	Value     float64
-	PatientId string
+import "patient-edge/entity"
+
+type UploadAbnormalArg struct {
+	Abnormal entity.Abnormal
 }
