@@ -10,10 +10,9 @@ import (
 
 type context struct {
 	// config is private
-	cloudDB           *sqlx.DB
-	edgeDBMap         map[string]*sqlx.DB
-	mqttClient        mqtt.Client //todo
-	noticeDoctorTopic string
+	cloudDB    *sqlx.DB
+	edgeDBMap  map[string]*sqlx.DB
+	mqttClient mqtt.Client //todo
 }
 
 func newContext(config config.CloudServiceConf) *context {

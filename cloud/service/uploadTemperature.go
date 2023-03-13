@@ -25,7 +25,7 @@ func (p *UploadTemperature) UploadAbnormal(abnormal entity.Abnormal) error {
 	}
 
 	common.MqttPublish(p.context.mqttClient,
-		p.context.noticeDoctorTopic,
+		"upload-temperature/notice-doctor",
 		[]string{"patientId"},
 		[]interface{}{p.AbnormalPatientId})
 	return nil

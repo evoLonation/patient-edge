@@ -17,7 +17,7 @@ func (p *UploadTemperature) UploadAbnormal(abnormal *entity.Abnormal) (bool, err
 		Abnormal: *abnormal,
 	}
 	var reply bool
-	err := p.client.Call("UploadTemperature.ReceiveAbnormal", &arg, &reply)
+	err := p.client.Call("UploadTemperature.UploadAbnormal", &arg, &reply)
 	return reply, err
 
 }
